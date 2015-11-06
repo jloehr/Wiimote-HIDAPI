@@ -8,8 +8,11 @@
 #include "targetver.h"
 
 #include <stdio.h>
+#include <iostream>
 #include <tchar.h>
 
-
+#include <Windows.h>
+#include <hidsdi.h>
+#include <SetupAPI.h>
 
 // TODO: reference additional headers your program requires here

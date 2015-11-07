@@ -27,6 +27,13 @@ void WiimoteDevice::SetLEDs()
 	Write(Buffer);
 }
 
+void WiimoteDevice::SetReportMode()
+{
+	DataBuffer Buffer({0x12, 0x00, 0x30 });
+
+	Write(Buffer);
+}
+
 void WiimoteDevice::Write(const DataBuffer & Buffer)
 {
 	DWORD BytesWritten;

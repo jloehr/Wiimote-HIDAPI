@@ -16,6 +16,7 @@ public:
 	void Disconnect();
 
 	void SetLEDs();
+	void SetReportMode();
 
 private:
 	HANDLE DeviceHandle;

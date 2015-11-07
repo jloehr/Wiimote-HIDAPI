@@ -16,10 +16,17 @@ int main()
 	for (WiimoteDevice & Wiimote : Wiimotes)
 	{
 		Wiimote.SetLEDs();
-		Wiimote.Disconnect();
+		Wiimote.SetReportMode();
 	}
 
 	system("pause");
+
+
+	for (WiimoteDevice & Wiimote : Wiimotes)
+	{
+		Wiimote.Disconnect();
+	}
+
     return 0;
 }
 

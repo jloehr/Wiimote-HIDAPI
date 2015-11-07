@@ -17,15 +17,19 @@ int main()
 	{
 		Wiimote.SetLEDs();
 		Wiimote.SetReportMode();
+		Wiimote.StartReader();
 	}
 
 	system("pause");
+	std::cout << "Exiting!" << std::endl;
 
 
 	for (WiimoteDevice & Wiimote : Wiimotes)
 	{
 		Wiimote.Disconnect();
 	}
+
+	system("pause");
 
     return 0;
 }

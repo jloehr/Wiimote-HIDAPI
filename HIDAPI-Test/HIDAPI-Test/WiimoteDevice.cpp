@@ -1,10 +1,18 @@
 #include "stdafx.h"
 #include "WiimoteDevice.h"
 
+DWORD WINAPI WiimoteStart(_In_ LPVOID lpParameter)
+{
+	WiimoteDevice * Device = static_cast<WiimoteDevice *>(lpParameter);
+	Device->ContinuousReader();
+
+	return 0;
+}
 
 WiimoteDevice::WiimoteDevice(HANDLE DeviceHandle)
-	:DeviceHandle(DeviceHandle)
+	:DeviceHandle(DeviceHandle), ReadThread(NULL), Run(TRUE)
 {
+	ZeroMemory(&ReadIo, sizeof(ReadIo));
 }
 
 WiimoteDevice::~WiimoteDevice()
@@ -13,10 +21,21 @@ WiimoteDevice::~WiimoteDevice()
 
 void WiimoteDevice::Disconnect()
 {
+	Run = false;
+	do {
+		SetEvent(ReadIo.hEvent);
+	} while(WaitForSingleObject(ReadThread, 100) == WAIT_TIMEOUT);
+
 	if (DeviceHandle != INVALID_HANDLE_VALUE)
 	{
 		CloseHandle(DeviceHandle);
 		DeviceHandle = INVALID_HANDLE_VALUE;
+	}
+	
+	if (ReadIo.hEvent != INVALID_HANDLE_VALUE)
+	{
+		CloseHandle(ReadIo.hEvent);
+		ReadIo.hEvent= INVALID_HANDLE_VALUE;
 	}
 }
 
@@ -34,6 +53,61 @@ void WiimoteDevice::SetReportMode()
 	Write(Buffer);
 }
 
+void WiimoteDevice::StartReader()
+{
+	ReadIo.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+	ReadThread = CreateThread(NULL, 0, WiimoteStart, this, 0, NULL);
+}
+
+void WiimoteDevice::ContinuousReader()
+{
+	UCHAR Buffer[255];
+	DWORD BytesRead;
+
+	while(Run)
+	{
+		ResetEvent(ReadIo.hEvent);
+		BytesRead = 0;
+		BOOL Result = ReadFile(DeviceHandle, &Buffer, sizeof(Buffer), &BytesRead, &ReadIo);
+		if (!Result)
+		{
+			DWORD Error = GetLastError();
+			if (Error != ERROR_IO_PENDING)
+			{
+				std::cout << "Read Failed: " << std::hex << Error << std::endl;
+				continue;
+			}
+			else
+			{
+				if (!GetOverlappedResult(DeviceHandle, &ReadIo, &BytesRead, TRUE))
+				{
+					Error = GetLastError();
+					std::cout << "Read Failed: " << std::hex << Error << std::endl;
+					continue;
+				}
+
+				if(ReadIo.Internal == STATUS_PENDING)
+				{
+					std::cout << "Read Interrupted" << std::endl;
+					if(!CancelIo(DeviceHandle))
+					{
+						Error = GetLastError();
+						std::cout << "Cancel IO Faile: " << std::hex << Error << std::endl;
+					}
+					continue;
+				}
+			}
+		}
+
+		std::cout << "Read  " << BytesRead << " Bytes from " << "0x" << std::hex << DeviceHandle << " : ";
+		for (size_t i = 0; i < BytesRead; i++)
+		{
+			std::cout << std::hex << (UINT)Buffer[i] << " ";
+		}
+		std::cout << std::endl;
+	}
+}
+
 void WiimoteDevice::Write(const DataBuffer & Buffer)
 {
 	DWORD BytesWritten;
@@ -49,6 +123,13 @@ void WiimoteDevice::Write(const DataBuffer & Buffer)
 		if (Error != ERROR_IO_PENDING)
 		{
 			std::cout << "Write Failed: " << std::hex << Error << std::endl;
+			return;
 		}
+	}
+
+	if (!GetOverlappedResult(DeviceHandle, &Overlapped, &BytesWritten, TRUE))
+	{
+		DWORD Error = GetLastError();
+		std::cout << "Write Failed: " << std::hex << Error << std::endl;
 	}
 }

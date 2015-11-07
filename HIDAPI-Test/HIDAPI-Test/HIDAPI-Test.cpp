@@ -13,6 +13,12 @@ int main()
 		Wiimotes = Factory.GetWiimoteDevices();
 	}
 	
+	for (WiimoteDevice & Wiimote : Wiimotes)
+	{
+		Wiimote.SetLEDs();
+		Wiimote.Disconnect();
+	}
+
 	system("pause");
     return 0;
 }

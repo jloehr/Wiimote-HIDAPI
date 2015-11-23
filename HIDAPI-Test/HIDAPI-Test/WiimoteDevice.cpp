@@ -10,7 +10,7 @@ DWORD WINAPI WiimoteStart(_In_ LPVOID lpParameter)
 }
 
 WiimoteDevice::WiimoteDevice(HANDLE DeviceHandle)
-	:DeviceHandle(DeviceHandle), ReadThread(NULL), Run(TRUE)
+	:DeviceHandle(DeviceHandle), ReadThread(NULL), Run(FALSE)
 {
 	ZeroMemory(&ReadIo, sizeof(ReadIo));
 }
@@ -19,13 +19,50 @@ WiimoteDevice::~WiimoteDevice()
 {
 }
 
+BOOL WiimoteDevice::Setup()
+{
+	PHIDP_PREPARSED_DATA PreparsedData = NULL;
+	HIDP_CAPS Caps;
+	BOOL Result;
+
+	std::cout << "Setting up: " << DeviceHandle << std::endl;
+
+	Result = HidD_GetPreparsedData(DeviceHandle, &PreparsedData);
+	if (!Result)
+	{
+		std::cout << "GetPreparsedData Failed!" << std::endl;
+		return FALSE;
+	}
+
+	Result = HidP_GetCaps(PreparsedData, &Caps);
+	if (!Result)
+	{
+		std::cout << "GetPreparsedData Failed!" << std::endl;
+		HidD_FreePreparsedData(PreparsedData);
+		return FALSE;
+	}
+
+	std::cout << "\tUsage: " << Caps.Usage << std::endl;
+	std::cout << "\tUsagePage: " << Caps.UsagePage << std::endl;
+	std::cout << "\tInputReportByteLength: " << Caps.InputReportByteLength << std::endl;
+	std::cout << "\tOutputReportByteLength: " << Caps.OutputReportByteLength << std::endl;
+	std::cout << "\tFeatureReportByteLength: " << Caps.FeatureReportByteLength << std::endl;
+
+	HidD_FreePreparsedData(PreparsedData);
+
+	return TRUE;
+}
+
 void WiimoteDevice::Disconnect()
 {
-	Run = false;
-	do {
-		SetEvent(ReadIo.hEvent);
-	} while(WaitForSingleObject(ReadThread, 100) == WAIT_TIMEOUT);
-
+	if (Run)
+	{
+		Run = FALSE;
+		do {
+			SetEvent(ReadIo.hEvent);
+		} while (WaitForSingleObject(ReadThread, 100) == WAIT_TIMEOUT);
+	}
+	
 	if (DeviceHandle != INVALID_HANDLE_VALUE)
 	{
 		CloseHandle(DeviceHandle);
@@ -55,6 +92,7 @@ void WiimoteDevice::SetReportMode()
 
 void WiimoteDevice::StartReader()
 {
+	Run = TRUE;
 	ReadIo.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 	ReadThread = CreateThread(NULL, 0, WiimoteStart, this, 0, NULL);
 }

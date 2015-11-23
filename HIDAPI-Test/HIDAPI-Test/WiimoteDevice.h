@@ -13,6 +13,7 @@ public:
 	WiimoteDevice(HANDLE DeviceHandle);
 	~WiimoteDevice();
 
+	BOOL Setup();
 	void Disconnect();
 
 	void SetLEDs();

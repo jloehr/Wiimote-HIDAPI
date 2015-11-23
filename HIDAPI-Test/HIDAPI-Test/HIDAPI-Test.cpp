@@ -15,9 +15,12 @@ int main()
 	
 	for (WiimoteDevice & Wiimote : Wiimotes)
 	{
-		Wiimote.SetLEDs();
-		Wiimote.SetReportMode();
-		Wiimote.StartReader();
+		if (Wiimote.Setup())
+		{
+			Wiimote.SetLEDs();
+			Wiimote.SetReportMode();
+			Wiimote.StartReader();
+		}
 	}
 
 	system("pause");

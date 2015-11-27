@@ -10,7 +10,7 @@ DWORD WINAPI WiimoteStart(_In_ LPVOID lpParameter)
 }
 
 WiimoteDevice::WiimoteDevice(HANDLE DeviceHandle)
-	:DeviceHandle(DeviceHandle), ReadThread(NULL), Run(FALSE)
+	:DeviceHandle(DeviceHandle), ReadThread(NULL), Run(FALSE), OutputReportMinSize(0)
 {
 	ZeroMemory(&ReadIo, sizeof(ReadIo));
 }
@@ -49,6 +49,8 @@ BOOL WiimoteDevice::Setup()
 	std::cout << "\tInputReportByteLength: " << Caps.InputReportByteLength << std::endl;
 	std::cout << "\tOutputReportByteLength: " << Caps.OutputReportByteLength << std::endl;
 	std::cout << "\tFeatureReportByteLength: " << Caps.FeatureReportByteLength << std::endl;
+
+	OutputReportMinSize = Caps.OutputReportByteLength;
 
 	HidD_FreePreparsedData(PreparsedData);
 
@@ -151,14 +153,23 @@ void WiimoteDevice::ContinuousReader()
 	}
 }
 
-void WiimoteDevice::Write(const DataBuffer & Buffer)
+void WiimoteDevice::Write(DataBuffer & Buffer)
 {
 	DWORD BytesWritten;
 	OVERLAPPED Overlapped;
 	ZeroMemory(&Overlapped, sizeof(Overlapped));
 	std::cout << "0x" << std::hex << DeviceHandle << std::endl;
 
-	BOOL Result = WriteFile(DeviceHandle, Buffer.data(), Buffer.size(), &BytesWritten, &Overlapped);
+	size_t BufferSize = Buffer.size();
+
+	if (BufferSize < OutputReportMinSize)
+	{
+		std::cout << "Resizing Buffer" << std::endl;
+		Buffer.resize(OutputReportMinSize, 0);
+	}
+
+
+	BOOL Result = WriteFile(DeviceHandle, Buffer.data(), BufferSize, &BytesWritten, &Overlapped);
 	if (!Result)
 	{
 		DWORD Error = GetLastError();

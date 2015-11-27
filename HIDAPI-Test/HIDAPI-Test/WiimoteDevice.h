@@ -29,6 +29,8 @@ private:
 
 	BOOL Run;
 
-	void Write(const DataBuffer & Buffer);
+	SHORT OutputReportMinSize;
+
+	void Write(DataBuffer & Buffer);
 };
 

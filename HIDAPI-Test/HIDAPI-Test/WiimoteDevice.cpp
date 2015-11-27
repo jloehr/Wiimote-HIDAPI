@@ -42,6 +42,8 @@ BOOL WiimoteDevice::Setup()
 		return FALSE;
 	}
 
+	std::cout << std::dec;
+
 	std::cout << "\tUsage: " << Caps.Usage << std::endl;
 	std::cout << "\tUsagePage: " << Caps.UsagePage << std::endl;
 	std::cout << "\tInputReportByteLength: " << Caps.InputReportByteLength << std::endl;
@@ -137,11 +139,14 @@ void WiimoteDevice::ContinuousReader()
 			}
 		}
 
-		std::cout << "Read  " << BytesRead << " Bytes from " << "0x" << std::hex << DeviceHandle << " : ";
+		std::cout << "Read  " << std::dec << BytesRead << " Bytes from " << "0x" << std::hex << DeviceHandle << " : ";
 		for (size_t i = 0; i < BytesRead; i++)
 		{
-			std::cout << std::hex << (UINT)Buffer[i] << " ";
+			std::cout.width(2);
+			std::cout.fill(' ');
+			std::cout << std::hex << static_cast<UINT>(Buffer[i]) << " ";
 		}
+
 		std::cout << std::endl;
 	}
 }

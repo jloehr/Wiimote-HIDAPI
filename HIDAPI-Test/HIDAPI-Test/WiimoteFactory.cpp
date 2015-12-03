@@ -34,9 +34,10 @@ WiimoteDeviceVector WiimoteFactory::GetWiimoteDevices()
 
 	while (SetupDiEnumDeviceInterfaces(DeviceInfoSet, NULL, &HidGuid, DeviceIndex, &DeviceInterfaceData))
 	{
-		std::cout << "New Device" << std::endl;
+		std::cout << "--- New Device ---" << std::endl;
 		CheckEnumeratedDeviceInterface();
 		DeviceIndex++;
+		std::cout << "------------------" << std::endl;
 	}
 
 	if (DeviceIndex == 0)
@@ -84,7 +85,7 @@ BOOL WiimoteFactory::CheckDevice(LPCTSTR DevicePath)
 		return FALSE;
 	}
 
-	std::cout << "0x" << std::hex << OpenDevice << std::endl;
+	std::cout << "DevicePath: \t0x" << std::hex << OpenDevice << std::endl;
 
 	HIDD_ATTRIBUTES HidAttributes;
 	HidAttributes.Size = sizeof(HidAttributes);
@@ -96,13 +97,13 @@ BOOL WiimoteFactory::CheckDevice(LPCTSTR DevicePath)
 		return FALSE;
 	}
 
-	std::cout << HidAttributes.VendorID << " - " << HidAttributes.ProductID << std::endl;
+	std::cout << "VID&PID: \t" << HidAttributes.VendorID << " - " << HidAttributes.ProductID << std::endl;
 
 	TCHAR ProductName[255];
 
 	if (HidD_GetProductString(OpenDevice, ProductName, 255))
 	{
-		std::wcout << ProductName << std::endl;
+		std::wcout << "HID Name: \t" << ProductName << std::endl;
 	}
 
 	return (HidAttributes.VendorID == 0x057e) && ((HidAttributes.ProductID == 0x0306) || (HidAttributes.ProductID == 0x0330));

@@ -58,8 +58,8 @@ void WiimoteFactory::CheckEnumeratedDeviceInterface()
 	PSP_DEVICE_INTERFACE_DETAIL_DATA DeviceInterfaceDetailData = (PSP_DEVICE_INTERFACE_DETAIL_DATA)malloc(RequiredSize);
 	DeviceInterfaceDetailData->cbSize = sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA);
 
-	Result = SetupDiGetDeviceInterfaceDetail(DeviceInfoSet, &DeviceInterfaceData, DeviceInterfaceDetailData, RequiredSize, NULL, NULL);
-
+	Result = SetupDiGetDeviceInterfaceDetail(DeviceInfoSet, &DeviceInterfaceData, DeviceInterfaceDetailData, RequiredSize, NULL, &DeviceInfoData);
+ 
 	BOOL IsWiimote = CheckDevice(DeviceInterfaceDetailData->DevicePath);
 
 	if (IsWiimote)
@@ -106,5 +106,60 @@ BOOL WiimoteFactory::CheckDevice(LPCTSTR DevicePath)
 		std::wcout << "HID Name: \t" << ProductName << std::endl;
 	}
 
+	PrintDeviceName(DeviceInfoSet, &DeviceInfoData);
+	PrintDriverInfo(DeviceInfoSet, &DeviceInfoData);
+
 	return (HidAttributes.VendorID == 0x057e) && ((HidAttributes.ProductID == 0x0306) || (HidAttributes.ProductID == 0x0330));
+}
+
+void WiimoteFactory::PrintDeviceName(HDEVINFO & DeviceInfoSet, PSP_DEVINFO_DATA DeviceInfoData)
+{
+	DWORD RequiredSize = 0;
+	DEVPROPTYPE DevicePropertyType;
+
+	SetupDiGetDeviceProperty(DeviceInfoSet, DeviceInfoData, &DEVPKEY_NAME, &DevicePropertyType, NULL, 0, &RequiredSize, 0);
+
+	PBYTE Buffer = (PBYTE)malloc(RequiredSize);
+	ZeroMemory(Buffer, RequiredSize);
+
+	BOOL Result = SetupDiGetDeviceProperty(DeviceInfoSet, DeviceInfoData, &DEVPKEY_NAME, &DevicePropertyType, Buffer, RequiredSize, NULL, 0);
+	if (!Result)
+	{
+		std::cout << "Error getting Device Name property: 0x" << std::hex << GetLastError() << std::endl;
+	}
+	else
+	{
+		std::wcout << "Device Name: \t" << (PWCHAR) Buffer << std::endl;
+	}
+
+	free(Buffer);
+}
+
+void WiimoteFactory::PrintDriverInfo(HDEVINFO & DeviceInfoSet, PSP_DEVINFO_DATA DeviceInfoData)
+{
+	SP_DRVINFO_DATA DriverInfo;
+	ZeroMemory(&DriverInfo, sizeof(SP_DRVINFO_DATA));
+	DriverInfo.cbSize = sizeof(SP_DRVINFO_DATA);
+
+	BOOL Result = SetupDiGetSelectedDriver(DeviceInfoSet, DeviceInfoData, &DriverInfo);
+
+	if (Result)
+	{
+		std::cout << "Driver Type: \t" << ((DriverInfo.DriverType == SPDIT_CLASSDRIVER) ? "Class Driver" : "Compatible Driver") << std::endl;
+		std::cout << "Description: \t" << DriverInfo.Description << std::endl;
+		std::cout << "MfgName: \t" << DriverInfo.MfgName << std::endl;
+		std::cout << "ProviderName: \t" << DriverInfo.ProviderName << std::endl;
+	}
+	else
+	{
+		DWORD Error = GetLastError();
+		if (Error == ERROR_NO_DRIVER_SELECTED)
+		{
+			std::cout << "No driver for the device" << std::endl;
+		}
+		else
+		{
+			std::cout << "Error getting Driver Info 0x" << std::hex << Error << std::endl;
+		}
+	}
 }

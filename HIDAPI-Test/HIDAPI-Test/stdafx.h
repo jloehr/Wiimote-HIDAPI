@@ -14,5 +14,7 @@
 #include <Windows.h>
 #include <hidsdi.h>
 #include <SetupAPI.h>
+#include <initguid.h>
+#include <Devpkey.h>
 
 // TODO: reference additional headers your program requires here

@@ -99,7 +99,8 @@ BOOL WiimoteFactory::CheckDevice(LPCTSTR DevicePath)
 
 	std::cout << "VID&PID: \t" << HidAttributes.VendorID << " - " << HidAttributes.ProductID << std::endl;
 
-	TCHAR ProductName[255];
+	WCHAR ProductName[255];
+	ZeroMemory(ProductName, sizeof(ProductName));
 
 	if (HidD_GetProductString(OpenDevice, ProductName, 255))
 	{

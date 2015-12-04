@@ -85,7 +85,7 @@ BOOL WiimoteFactory::CheckDevice(LPCTSTR DevicePath)
 		return FALSE;
 	}
 
-	std::cout << "DevicePath: \t0x" << std::hex << OpenDevice << std::endl;
+	std::cout << "Device Handle: \t0x" << std::hex << OpenDevice << std::endl;
 
 	HIDD_ATTRIBUTES HidAttributes;
 	HidAttributes.Size = sizeof(HidAttributes);

@@ -107,60 +107,104 @@ BOOL WiimoteFactory::CheckDevice(LPCTSTR DevicePath)
 		std::wcout << "HID Name: \t" << ProductName << std::endl;
 	}
 
-	PrintDeviceName(DeviceInfoSet, &DeviceInfoData);
 	PrintDriverInfo(DeviceInfoSet, &DeviceInfoData);
+	PrintDeviceTreeInfo(3, DeviceInfoData.DevInst);
 
 	return (HidAttributes.VendorID == 0x057e) && ((HidAttributes.ProductID == 0x0306) || (HidAttributes.ProductID == 0x0330));
 }
 
-void WiimoteFactory::PrintDeviceName(HDEVINFO & DeviceInfoSet, PSP_DEVINFO_DATA DeviceInfoData)
+
+void WiimoteFactory::PrintDeviceTreeInfo(UINT Levels, DEVINST ChildDevice)
+{
+	ULONG Status;
+	ULONG ProblemNumber;
+	CONFIGRET Result;
+
+	if (Levels == 0)
+	{
+		return;
+	}
+
+	std::cout << "  +----+  " << std::endl;
+
+	Result = CM_Get_DevNode_Status(&Status, &ProblemNumber, ChildDevice, 0);
+	if (Result != CR_SUCCESS)
+	{
+		std::cout << "Something wrong woth the Device Node!" << std::endl;
+		return;
+	}
+
+	DEVINST ParentDevice;
+
+	Result = CM_Get_Parent(&ParentDevice, ChildDevice, 0);
+	if(Result != CR_SUCCESS)
+	{
+		std::cout << "Error getting parent: 0x" << std::hex << Result << std::endl;
+		return;
+	}
+
+	WCHAR ParentDeviceID[MAX_DEVICE_ID_LEN];
+
+	Result = CM_Get_Device_ID(ParentDevice, ParentDeviceID, MAX_DEVICE_ID_LEN, 0);
+	if (Result != CR_SUCCESS)
+	{
+		std::cout << "Error getting parent device id: 0x" << std::hex << Result << std::endl;
+		return;
+	}
+	
+	std::wcout << "Device ID: \t" << ParentDeviceID << std::endl;
+	
+	HDEVINFO DeviceInfoSet = SetupDiCreateDeviceInfoList(NULL, NULL);
+	SP_DEVINFO_DATA DeviceInfoData;
+	ZeroMemory(&DeviceInfoData, sizeof(SP_DEVINFO_DATA));
+	DeviceInfoData.cbSize = sizeof(SP_DEVINFO_DATA);
+
+	if (!SetupDiOpenDeviceInfo(DeviceInfoSet, ParentDeviceID, NULL, 0, &DeviceInfoData))
+	{
+		std::cout << "Error getting Device Info Data: 0x" << std::hex << GetLastError() << std::endl;
+	}
+	else
+	{
+		PrintDriverInfo(DeviceInfoSet, &DeviceInfoData);
+	}
+
+	SetupDiDestroyDeviceInfoList(DeviceInfoSet);
+
+	PrintDeviceTreeInfo(Levels - 1, ParentDevice);
+
+}
+
+void WiimoteFactory::PrintDriverInfo(HDEVINFO & DeviceInfoSet, PSP_DEVINFO_DATA DeviceInfoData)
+{
+	PrintDeviceProperty(DeviceInfoSet, DeviceInfoData, L"Device Name", &DEVPKEY_NAME);
+	PrintDeviceProperty(DeviceInfoSet, DeviceInfoData, L"Description", &DEVPKEY_Device_DriverDesc);
+	PrintDeviceProperty(DeviceInfoSet, DeviceInfoData, L"Provider", &DEVPKEY_Device_DriverProvider);
+	PrintDeviceProperty(DeviceInfoSet, DeviceInfoData, L"Manufacturer", &DEVPKEY_Device_Manufacturer);
+	PrintDeviceProperty(DeviceInfoSet, DeviceInfoData, L"PDO", &DEVPKEY_Device_PDOName);
+	PrintDeviceProperty(DeviceInfoSet, DeviceInfoData, L"Bus Reported", &DEVPKEY_Device_BusReportedDeviceDesc);
+	PrintDeviceProperty(DeviceInfoSet, DeviceInfoData, L"Device Driver", &DEVPKEY_Device_Driver);
+}
+
+void WiimoteFactory::PrintDeviceProperty(HDEVINFO & DeviceInfoSet, PSP_DEVINFO_DATA DeviceInfoData, const PWCHAR PropertyName, const DEVPROPKEY * Property)
 {
 	DWORD RequiredSize = 0;
 	DEVPROPTYPE DevicePropertyType;
 
-	SetupDiGetDeviceProperty(DeviceInfoSet, DeviceInfoData, &DEVPKEY_NAME, &DevicePropertyType, NULL, 0, &RequiredSize, 0);
+	SetupDiGetDeviceProperty(DeviceInfoSet, DeviceInfoData, Property, &DevicePropertyType, NULL, 0, &RequiredSize, 0);
 
 	PBYTE Buffer = (PBYTE)malloc(RequiredSize);
 	ZeroMemory(Buffer, RequiredSize);
 
-	BOOL Result = SetupDiGetDeviceProperty(DeviceInfoSet, DeviceInfoData, &DEVPKEY_NAME, &DevicePropertyType, Buffer, RequiredSize, NULL, 0);
+	BOOL Result = SetupDiGetDeviceProperty(DeviceInfoSet, DeviceInfoData, Property, &DevicePropertyType, Buffer, RequiredSize, NULL, 0);
 	if (!Result)
 	{
-		std::cout << "Error getting Device Name property: 0x" << std::hex << GetLastError() << std::endl;
+		std::wcout << "Error getting Device Property (" << PropertyName << "): 0x" << std::hex << GetLastError() << std::endl;
 	}
 	else
 	{
-		std::wcout << "Device Name: \t" << (PWCHAR) Buffer << std::endl;
+		std::wcout << PropertyName << ": \t" << (PWCHAR)Buffer << std::endl;
 	}
 
 	free(Buffer);
 }
 
-void WiimoteFactory::PrintDriverInfo(HDEVINFO & DeviceInfoSet, PSP_DEVINFO_DATA DeviceInfoData)
-{
-	SP_DRVINFO_DATA DriverInfo;
-	ZeroMemory(&DriverInfo, sizeof(SP_DRVINFO_DATA));
-	DriverInfo.cbSize = sizeof(SP_DRVINFO_DATA);
-
-	BOOL Result = SetupDiGetSelectedDriver(DeviceInfoSet, DeviceInfoData, &DriverInfo);
-
-	if (Result)
-	{
-		std::cout << "Driver Type: \t" << ((DriverInfo.DriverType == SPDIT_CLASSDRIVER) ? "Class Driver" : "Compatible Driver") << std::endl;
-		std::cout << "Description: \t" << DriverInfo.Description << std::endl;
-		std::cout << "MfgName: \t" << DriverInfo.MfgName << std::endl;
-		std::cout << "ProviderName: \t" << DriverInfo.ProviderName << std::endl;
-	}
-	else
-	{
-		DWORD Error = GetLastError();
-		if (Error == ERROR_NO_DRIVER_SELECTED)
-		{
-			std::cout << "No driver for the device" << std::endl;
-		}
-		else
-		{
-			std::cout << "Error getting Driver Info 0x" << std::hex << Error << std::endl;
-		}
-	}
-}

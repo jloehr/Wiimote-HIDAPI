@@ -29,6 +29,7 @@ private:
 	void PrintDeviceTreeInfo(UINT Levels, DEVINST ChildDevice);
 	void PrintDriverInfo(HDEVINFO &DeviceInfoSet, PSP_DEVINFO_DATA DeviceInfoData);
 	void PrintDeviceProperty(HDEVINFO &DeviceInfoSet, PSP_DEVINFO_DATA DeviceInfoData, const PWCHAR PropertyName, const DEVPROPKEY * Property);
+	std::wstring GetDeviceProperty(HDEVINFO &DeviceInfoSet, PSP_DEVINFO_DATA DeviceInfoData, const DEVPROPKEY * Property);
 
 };
 

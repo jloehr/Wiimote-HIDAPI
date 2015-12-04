@@ -186,24 +186,31 @@ void WiimoteFactory::PrintDriverInfo(HDEVINFO & DeviceInfoSet, PSP_DEVINFO_DATA 
 
 void WiimoteFactory::PrintDeviceProperty(HDEVINFO & DeviceInfoSet, PSP_DEVINFO_DATA DeviceInfoData, const PWCHAR PropertyName, const DEVPROPKEY * Property)
 {
-	DWORD RequiredSize = 0;
-	DEVPROPTYPE DevicePropertyType;
-
-	SetupDiGetDeviceProperty(DeviceInfoSet, DeviceInfoData, Property, &DevicePropertyType, NULL, 0, &RequiredSize, 0);
-
-	PBYTE Buffer = (PBYTE)malloc(RequiredSize);
-	ZeroMemory(Buffer, RequiredSize);
-
-	BOOL Result = SetupDiGetDeviceProperty(DeviceInfoSet, DeviceInfoData, Property, &DevicePropertyType, Buffer, RequiredSize, NULL, 0);
-	if (!Result)
+	std::wstring Result = GetDeviceProperty(DeviceInfoSet, DeviceInfoData, Property);
+	if (Result.empty())
 	{
 		std::wcout << "Error getting Device Property (" << PropertyName << "): 0x" << std::hex << GetLastError() << std::endl;
 	}
 	else
 	{
-		std::wcout << PropertyName << ": \t" << (PWCHAR)Buffer << std::endl;
+		std::wcout << PropertyName << ": \t" << Result << std::endl;
 	}
-
-	free(Buffer);
 }
 
+std::wstring WiimoteFactory::GetDeviceProperty(HDEVINFO & DeviceInfoSet, PSP_DEVINFO_DATA DeviceInfoData, const DEVPROPKEY * Property)
+{
+	DWORD RequiredSize = 0;
+	DEVPROPTYPE DevicePropertyType;
+
+	SetupDiGetDeviceProperty(DeviceInfoSet, DeviceInfoData, Property, &DevicePropertyType, NULL, 0, &RequiredSize, 0);
+
+	std::vector<BYTE> Buffer(RequiredSize, 0);
+
+	BOOL Result = SetupDiGetDeviceProperty(DeviceInfoSet, DeviceInfoData, Property, &DevicePropertyType, Buffer.data(), RequiredSize, NULL, 0);
+	if (!Result)
+	{
+		return std::wstring();
+	}
+
+	return std::wstring((PWCHAR)Buffer.data());
+}

@@ -13,7 +13,7 @@ public:
 	WiimoteDevice(HANDLE DeviceHandle);
 	~WiimoteDevice();
 
-	BOOL Setup();
+	bool Setup();
 	void Disconnect();
 
 	void SetLEDs();
@@ -27,7 +27,7 @@ private:
 	HANDLE ReadThread;
 	OVERLAPPED ReadIo;
 
-	BOOL Run;
+	bool Run;
 
 	SHORT OutputReportMinSize;
 

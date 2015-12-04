@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <iostream>
 #include <tchar.h>
+#include <string>
 
 #include <Windows.h>
 #include <hidsdi.h>
@@ -17,5 +18,6 @@
 #include <initguid.h>
 #include <Devpkey.h>
 #include <Cfgmgr32.h>
+#include <Ntdef.h>
 
 // TODO: reference additional headers your program requires here

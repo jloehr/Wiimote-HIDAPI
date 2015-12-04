@@ -24,7 +24,7 @@ private:
 	HANDLE OpenDevice;
 
 	void CheckEnumeratedDeviceInterface();
-	BOOL CheckDevice(LPCTSTR DevicePath);
+	bool CheckDevice(LPCTSTR DevicePath);
 
 	void PrintDeviceTreeInfo(UINT Levels, DEVINST ChildDevice);
 	void PrintDriverInfo(HDEVINFO &DeviceInfoSet, PSP_DEVINFO_DATA DeviceInfoData);

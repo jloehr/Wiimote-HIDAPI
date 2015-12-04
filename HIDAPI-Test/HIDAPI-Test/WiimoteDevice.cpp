@@ -19,11 +19,12 @@ WiimoteDevice::~WiimoteDevice()
 {
 }
 
-BOOL WiimoteDevice::Setup()
+bool WiimoteDevice::Setup()
 {
 	PHIDP_PREPARSED_DATA PreparsedData = NULL;
 	HIDP_CAPS Caps;
-	BOOL Result;
+	BOOLEAN Result;
+	NTSTATUS Status;
 
 	std::cout << "Setting up: " << DeviceHandle << std::endl;
 
@@ -31,15 +32,15 @@ BOOL WiimoteDevice::Setup()
 	if (!Result)
 	{
 		std::cout << "GetPreparsedData Failed!" << std::endl;
-		return FALSE;
+		return false;
 	}
 
-	Result = HidP_GetCaps(PreparsedData, &Caps);
-	if (!Result)
+	Status = HidP_GetCaps(PreparsedData, &Caps);
+	if (!NT_SUCCESS(Status))
 	{
 		std::cout << "GetPreparsedData Failed!" << std::endl;
 		HidD_FreePreparsedData(PreparsedData);
-		return FALSE;
+		return false;
 	}
 
 	std::cout << std::dec;
@@ -54,14 +55,14 @@ BOOL WiimoteDevice::Setup()
 
 	HidD_FreePreparsedData(PreparsedData);
 
-	return TRUE;
+	return true;
 }
 
 void WiimoteDevice::Disconnect()
 {
 	if (Run)
 	{
-		Run = FALSE;
+		Run = false;
 		do {
 			SetEvent(ReadIo.hEvent);
 		} while (WaitForSingleObject(ReadThread, 100) == WAIT_TIMEOUT);
@@ -96,7 +97,7 @@ void WiimoteDevice::SetReportMode()
 
 void WiimoteDevice::StartReader()
 {
-	Run = TRUE;
+	Run = true;
 	ReadIo.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 	ReadThread = CreateThread(NULL, 0, WiimoteStart, this, 0, NULL);
 }

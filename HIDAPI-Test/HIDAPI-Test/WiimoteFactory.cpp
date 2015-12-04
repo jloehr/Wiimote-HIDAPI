@@ -75,14 +75,14 @@ void WiimoteFactory::CheckEnumeratedDeviceInterface()
 	free(DeviceInterfaceDetailData);
 }
 
-BOOL WiimoteFactory::CheckDevice(LPCTSTR DevicePath)
+bool WiimoteFactory::CheckDevice(LPCTSTR DevicePath)
 {
 	OpenDevice = CreateFile(DevicePath, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, NULL);
 
 	if (OpenDevice == INVALID_HANDLE_VALUE)
 	{
 		std::cout << "Failed to open Device." << std::endl;
-		return FALSE;
+		return false;
 	}
 
 	std::cout << "Device Handle: \t0x" << std::hex << OpenDevice << std::endl;
@@ -94,7 +94,7 @@ BOOL WiimoteFactory::CheckDevice(LPCTSTR DevicePath)
 	if (!Result)
 	{
 		std::cout << "Failed to get hid attributes" << std::endl;
-		return FALSE;
+		return false;
 	}
 
 	std::cout << "VID&PID: \t" << HidAttributes.VendorID << " - " << HidAttributes.ProductID << std::endl;
@@ -171,7 +171,6 @@ void WiimoteFactory::PrintDeviceTreeInfo(UINT Levels, DEVINST ChildDevice)
 	SetupDiDestroyDeviceInfoList(DeviceInfoSet);
 
 	PrintDeviceTreeInfo(Levels - 1, ParentDevice);
-
 }
 
 void WiimoteFactory::PrintDriverInfo(HDEVINFO & DeviceInfoSet, PSP_DEVINFO_DATA DeviceInfoData)

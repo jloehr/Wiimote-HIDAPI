@@ -173,6 +173,12 @@ void WiimoteDevice::Write(DataBuffer & Buffer)
 	if (!Result)
 	{
 		DWORD Error = GetLastError();
+
+		if (Error == ERROR_INVALID_USER_BUFFER)
+		{
+			std::cout << "Falling back to SetOutputReport" << std::endl;
+			WriteFallback(Buffer);
+		}
 		
 		if (Error != ERROR_IO_PENDING)
 		{
@@ -185,5 +191,15 @@ void WiimoteDevice::Write(DataBuffer & Buffer)
 	{
 		DWORD Error = GetLastError();
 		std::cout << "Write Failed: " << std::hex << Error << std::endl;
+	}
+}
+
+void WiimoteDevice::WriteFallback(DataBuffer & Buffer)
+{
+	BOOL Result = HidD_SetOutputReport(DeviceHandle, Buffer.data(), Buffer.size());
+	if (!Result)
+	{
+		DWORD Error = GetLastError();
+		std::cout << "SetOutputReport Failed: " << std::hex << Error << std::endl;
 	}
 }

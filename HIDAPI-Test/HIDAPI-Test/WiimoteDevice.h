@@ -34,5 +34,6 @@ private:
 	SHORT OutputReportMinSize;
 
 	void Write(DataBuffer & Buffer);
+	void WriteFallback(DataBuffer & Buffer);
 };
 

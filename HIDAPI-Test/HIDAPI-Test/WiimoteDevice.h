@@ -10,7 +10,7 @@ typedef std::vector<UCHAR> DataBuffer;
 class WiimoteDevice
 {
 public:
-	WiimoteDevice(HANDLE DeviceHandle);
+	WiimoteDevice(HANDLE DeviceHandle, bool UseOutputReportSize);
 	~WiimoteDevice();
 
 	bool Setup();
@@ -23,6 +23,8 @@ public:
 	void ContinuousReader();
 
 private:
+	const bool UseOutputReportSize;
+
 	HANDLE DeviceHandle;
 	HANDLE ReadThread;
 	OVERLAPPED ReadIo;

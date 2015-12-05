@@ -64,7 +64,7 @@ void WiimoteFactory::CheckEnumeratedDeviceInterface()
 
 	if (IsWiimote)
 	{
-		WiimoteDevices.push_back(WiimoteDevice(OpenDevice));
+		WiimoteDevices.push_back(WiimoteDevice(OpenDevice, IsUsingToshibaStack()));
 	}
 	else
 	{
@@ -113,6 +113,24 @@ bool WiimoteFactory::CheckDevice(LPCTSTR DevicePath)
 	return (HidAttributes.VendorID == 0x057e) && ((HidAttributes.ProductID == 0x0306) || (HidAttributes.ProductID == 0x0330));
 }
 
+bool WiimoteFactory::IsUsingToshibaStack()
+{
+	HDEVINFO ParentDeviceInfoSet;
+	SP_DEVINFO_DATA ParentDeviceInfoData;
+	std::vector<WCHAR> ParentDeviceID;
+
+	bool Result = GetParentDevice(DeviceInfoData.DevInst, ParentDeviceInfoSet, &ParentDeviceInfoData, ParentDeviceID);
+	if (!Result)
+	{
+		return false;
+	}
+
+	std::wstring Provider = GetDeviceProperty(ParentDeviceInfoSet, &ParentDeviceInfoData, &DEVPKEY_Device_DriverProvider);
+
+	SetupDiDestroyDeviceInfoList(ParentDeviceInfoSet);
+
+	return (Provider == L"TOSHIBA");
+}
 
 void WiimoteFactory::PrintDeviceTreeInfo(UINT Levels, DEVINST ChildDevice)
 {

@@ -110,6 +110,7 @@ void WiimoteDevice::ContinuousReader()
 
 	while(Run)
 	{
+		ZeroMemory(Buffer, sizeof(Buffer));
 		ResetEvent(ReadIo.hEvent);
 		BytesRead = 0;
 		BOOL Result = ReadFile(DeviceHandle, &Buffer, sizeof(Buffer), &BytesRead, &ReadIo);

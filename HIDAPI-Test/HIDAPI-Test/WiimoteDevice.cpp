@@ -196,7 +196,7 @@ void WiimoteDevice::Write(DataBuffer & Buffer)
 
 void WiimoteDevice::WriteFallback(DataBuffer & Buffer)
 {
-	BOOL Result = HidD_SetOutputReport(DeviceHandle, Buffer.data(), Buffer.size());
+	BOOL Result = HidD_SetOutputReport(DeviceHandle, Buffer.data(), (ULONG)Buffer.size());
 	if (!Result)
 	{
 		DWORD Error = GetLastError();

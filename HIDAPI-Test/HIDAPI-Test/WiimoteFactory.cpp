@@ -116,10 +116,6 @@ bool WiimoteFactory::CheckDevice(LPCTSTR DevicePath)
 
 void WiimoteFactory::PrintDeviceTreeInfo(UINT Levels, DEVINST ChildDevice)
 {
-	ULONG Status;
-	ULONG ProblemNumber;
-	CONFIGRET Result;
-
 	if (Levels == 0)
 	{
 		return;
@@ -127,50 +123,22 @@ void WiimoteFactory::PrintDeviceTreeInfo(UINT Levels, DEVINST ChildDevice)
 
 	std::cout << "  +----+  " << std::endl;
 
-	Result = CM_Get_DevNode_Status(&Status, &ProblemNumber, ChildDevice, 0);
-	if (Result != CR_SUCCESS)
+	HDEVINFO ParentDeviceInfoSet;
+	SP_DEVINFO_DATA ParentDeviceInfoData;
+	std::vector<WCHAR> ParentDeviceID;
+
+	bool Result = GetParentDevice(ChildDevice, ParentDeviceInfoSet, &ParentDeviceInfoData, ParentDeviceID);
+	if (!Result)
 	{
-		std::cout << "Something wrong woth the Device Node!" << std::endl;
 		return;
 	}
 
-	DEVINST ParentDevice;
+	std::wcout << "Device ID: \t" << ParentDeviceID.data() << std::endl;
+	PrintDriverInfo(ParentDeviceInfoSet, &ParentDeviceInfoData);
 
-	Result = CM_Get_Parent(&ParentDevice, ChildDevice, 0);
-	if(Result != CR_SUCCESS)
-	{
-		std::cout << "Error getting parent: 0x" << std::hex << Result << std::endl;
-		return;
-	}
+	PrintDeviceTreeInfo(Levels - 1, ParentDeviceInfoData.DevInst);
 
-	WCHAR ParentDeviceID[MAX_DEVICE_ID_LEN];
-
-	Result = CM_Get_Device_ID(ParentDevice, ParentDeviceID, MAX_DEVICE_ID_LEN, 0);
-	if (Result != CR_SUCCESS)
-	{
-		std::cout << "Error getting parent device id: 0x" << std::hex << Result << std::endl;
-		return;
-	}
-	
-	std::wcout << "Device ID: \t" << ParentDeviceID << std::endl;
-	
-	HDEVINFO DeviceInfoSet = SetupDiCreateDeviceInfoList(NULL, NULL);
-	SP_DEVINFO_DATA DeviceInfoData;
-	ZeroMemory(&DeviceInfoData, sizeof(SP_DEVINFO_DATA));
-	DeviceInfoData.cbSize = sizeof(SP_DEVINFO_DATA);
-
-	if (!SetupDiOpenDeviceInfo(DeviceInfoSet, ParentDeviceID, NULL, 0, &DeviceInfoData))
-	{
-		std::cout << "Error getting Device Info Data: 0x" << std::hex << GetLastError() << std::endl;
-	}
-	else
-	{
-		PrintDriverInfo(DeviceInfoSet, &DeviceInfoData);
-	}
-
-	SetupDiDestroyDeviceInfoList(DeviceInfoSet);
-
-	PrintDeviceTreeInfo(Levels - 1, ParentDevice);
+	SetupDiDestroyDeviceInfoList(ParentDeviceInfoSet);
 }
 
 void WiimoteFactory::PrintDriverInfo(HDEVINFO & DeviceInfoSet, PSP_DEVINFO_DATA DeviceInfoData)
@@ -195,6 +163,51 @@ void WiimoteFactory::PrintDeviceProperty(HDEVINFO & DeviceInfoSet, PSP_DEVINFO_D
 	{
 		std::wcout << PropertyName << ": \t" << Result << std::endl;
 	}
+}
+
+bool WiimoteFactory::GetParentDevice(const DEVINST & ChildDevice, HDEVINFO & ParentDeviceInfoSet, PSP_DEVINFO_DATA ParentDeviceInfoData, std::vector<WCHAR> & ParentDeviceID)
+{
+	ULONG Status;
+	ULONG ProblemNumber;
+	CONFIGRET Result;
+
+	Result = CM_Get_DevNode_Status(&Status, &ProblemNumber, ChildDevice, 0);
+	if (Result != CR_SUCCESS)
+	{
+		std::cout << "Something wrong woth the Device Node!" << std::endl;
+		return false;
+	}
+
+	DEVINST ParentDevice;
+
+	Result = CM_Get_Parent(&ParentDevice, ChildDevice, 0);
+	if (Result != CR_SUCCESS)
+	{
+		std::cout << "Error getting parent: 0x" << std::hex << Result << std::endl;
+		 return false;
+	}
+
+	ParentDeviceID.resize(MAX_DEVICE_ID_LEN);
+
+	Result = CM_Get_Device_ID(ParentDevice, ParentDeviceID.data(), (ULONG)ParentDeviceID.size(), 0);
+	if (Result != CR_SUCCESS)
+	{
+		std::cout << "Error getting parent device id: 0x" << std::hex << Result << std::endl;
+		return false;
+	}
+
+	ParentDeviceInfoSet = SetupDiCreateDeviceInfoList(NULL, NULL);
+	ZeroMemory(ParentDeviceInfoData, sizeof(SP_DEVINFO_DATA));
+	ParentDeviceInfoData->cbSize = sizeof(SP_DEVINFO_DATA);
+
+	if (!SetupDiOpenDeviceInfo(ParentDeviceInfoSet, ParentDeviceID.data(), NULL, 0, ParentDeviceInfoData))
+	{
+		std::cout << "Error getting Device Info Data: 0x" << std::hex << GetLastError() << std::endl;
+		SetupDiDestroyDeviceInfoList(ParentDeviceInfoSet);
+		return false;
+	}
+
+	return true;
 }
 
 std::wstring WiimoteFactory::GetDeviceProperty(HDEVINFO & DeviceInfoSet, PSP_DEVINFO_DATA DeviceInfoData, const DEVPROPKEY * Property)

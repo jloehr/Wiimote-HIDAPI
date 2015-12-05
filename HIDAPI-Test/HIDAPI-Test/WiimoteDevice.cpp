@@ -36,7 +36,7 @@ bool WiimoteDevice::Setup()
 	}
 
 	Status = HidP_GetCaps(PreparsedData, &Caps);
-	if (!NT_SUCCESS(Status))
+	if (Status < 0)
 	{
 		std::cout << "GetPreparsedData Failed!" << std::endl;
 		HidD_FreePreparsedData(PreparsedData);
